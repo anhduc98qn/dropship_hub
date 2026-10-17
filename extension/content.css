@@ -1,0 +1,9 @@
+/* Nút "Lưu mẫu" gắn góc trên phải mỗi bài */
+.dsh-save {
+  position: absolute; top: 8px; right: 56px; z-index: 3;
+  padding: 6px 12px; border: 0; border-radius: 6px;
+  background: #F2B33D; color: #1B2735; font: 600 13px/1.2 system-ui, -apple-system, 'Segoe UI', sans-serif;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .25); cursor: pointer;
+}
+.dsh-save:hover { background: #E9A41F; }
+.dsh-save:disabled { opacity: .75; cursor: progress; }

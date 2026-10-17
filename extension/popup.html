@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <title>Dropship Hub</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header><img src="icons/icon32.png" alt=""><h1>Dropship Hub</h1></header>
+
+  <!-- 1. Kết nối Supabase -->
+  <section id="v-config" hidden>
+    <p class="hint">Nhập thông tin quản lý gửi cho bạn (Supabase › Project Settings › API).</p>
+    <form id="f-config">
+      <label>Địa chỉ Supabase<input name="url" placeholder="https://xxxx.supabase.co" required></label>
+      <label>Khóa công khai (anon key)<input name="anonKey" required></label>
+      <button class="primary">Lưu kết nối</button>
+    </form>
+  </section>
+
+  <!-- 2. Đăng nhập -->
+  <section id="v-login" hidden>
+    <p class="hint">Đăng nhập bằng tài khoản đã tạo trên web Dropship Hub.</p>
+    <form id="f-login">
+      <label>Email<input name="email" type="email" autocomplete="username" required></label>
+      <label>Mật khẩu<input name="password" type="password" autocomplete="current-password" required></label>
+      <button class="primary">Đăng nhập</button>
+    </form>
+    <button class="link" id="b-reconfig">Đổi địa chỉ Supabase</button>
+  </section>
+
+  <!-- 3. Đã đăng nhập -->
+  <section id="v-main" hidden>
+    <div class="who"><b id="who-name"></b><span id="who-role"></span></div>
+    <div class="card">
+      <h2>Đọc số hôm nay</h2>
+      <p id="progress" class="muted"></p>
+      <button class="primary" id="b-run">Đọc số ngay</button>
+      <p class="note">Extension mở một cửa sổ riêng và lần lượt mở từng bài. Đừng đóng, thu nhỏ hay để cửa sổ khác che lên cửa sổ đó cho tới khi xong (bị che thì Facebook không hiện nội dung).</p>
+      <label class="check"><input type="checkbox" id="c-auto"> Tự đọc số khi mở Chrome (thử lại mỗi giờ, tối đa 3 lần/ngày)</label>
+    </div>
+    <p class="hint">Lưu mẫu: bấm nút vàng <b>Lưu mẫu</b> trên bài quảng cáo ở Facebook.</p>
+    <div class="row">
+      <button class="link" id="b-logout">Đăng xuất</button>
+      <span class="muted" id="server"></span>
+    </div>
+  </section>
+
+  <p id="msg" class="msg"></p>
+  <script src="popup.js"></script>
+</body>
+</html>

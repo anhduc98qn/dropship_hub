@@ -1,0 +1,16 @@
+{
+  "name": "dropship-hub",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test \"supabase/tests/*.test.mjs\" \"extension/tests/*.test.mjs\" \"tools/test-server/tests/*.test.mjs\"",
+    "test:db": "node --test \"supabase/tests/*.test.mjs\"",
+    "test:ext": "node --test \"extension/tests/*.test.mjs\"",
+    "build:web": "npm --prefix web install --no-fund --no-audit && npm --prefix web run build",
+    "test-server": "node tools/test-server/server.mjs"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.2.17",
+    "jsdom": "25.0.1"
+  }
+}
