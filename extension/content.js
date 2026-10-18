@@ -30,14 +30,16 @@
   // khi đó bài = tổ tiên cao nhất của nút Like mà chưa chứa nút Like của bài khác.
   const LIKE_SEL = '[data-ad-rendering-role="like_button"], [role="button"][aria-label]';
   const STOP_SEL = 'body, [role="main"], [role="feed"], [role="dialog"], [role="complementary"], [role="banner"]';
-  const likeAnchors = (scope) => [...scope.querySelectorAll(LIKE_SEL)].filter((e) =>
+  // Nút Like thật = [role="button"] aria-label="Like" bọc vùng like_button → gộp về 1 mốc mỗi nút
+  const likeAnchors = (scope) => [...new Set([...scope.querySelectorAll(LIKE_SEL)].filter((e) =>
     (e.matches('[data-ad-rendering-role]') || /^(like|thích)$/i.test((e.getAttribute('aria-label') || '').trim())) &&
-    !(e.closest('div[role="article"]') && isCommentArticle(e.closest('div[role="article"]'))));
+    !(e.closest('div[role="article"]') && isCommentArticle(e.closest('div[role="article"]'))))
+    .map((e) => e.closest('[role="button"]') || e))];
   function postsByLike(scope) {
     const anchors = likeAnchors(scope);
     const roots = new Set();
     anchors.forEach((a) => {
-      let cur = a.closest('[role="button"]') || a;
+      let cur = a;
       while (cur.parentElement && !cur.parentElement.matches(STOP_SEL) && cur.parentElement !== scope &&
         !anchors.some((o) => o !== a && cur.parentElement.contains(o))) cur = cur.parentElement;
       if (cur !== a && !cur.matches(STOP_SEL)) roots.add(cur);

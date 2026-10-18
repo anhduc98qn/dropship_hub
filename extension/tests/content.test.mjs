@@ -70,7 +70,10 @@ test('nhận diện bài + gắn nút Lưu mẫu, bỏ qua bình luận', async 
 });
 
 test('bảng tin không còn aria-posinset: bài = khối chứa nút Like, bỏ khung giữ chỗ', async () => {
-  const inner = AD_POST.replace('<div role="main"><div aria-posinset="1">', '').replace(/<\/div><\/div>$/, '');
+  // nút Like thật: role="button" aria-label="Like" bọc vùng like_button (số đo trên Facebook 18/10/2026)
+  const inner = AD_POST.replace('<div role="main"><div aria-posinset="1">', '').replace(/<\/div><\/div>$/, '')
+    .replace('<div role="button"><span data-ad-rendering-role="like_button">', '<div role="button" aria-label="Like"><div><div><span data-ad-rendering-role="like_button">')
+    .replace('2.7K</span></div>', '2.7K</span></div></div></div>');
   const { w, t } = load(`<div role="main"><div role="feed">
     <div class="x1"><div><div class="wrap">${inner}</div></div></div>
     <div class="x1"><div><div class="wrap">${inner.replace('pfbid0abcDEF', 'pfbid0xyz')}</div></div></div>
