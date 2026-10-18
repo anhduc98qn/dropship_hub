@@ -26,14 +26,37 @@
   const POST_SEL = 'div[aria-posinset], div[data-pagelet^="FeedUnit"], div[role="article"]';
   const isCommentArticle = (el) => /comment|bình luận|reply|phản hồi/i.test(el.getAttribute('aria-label') || '');
 
+  // Bảng tin 10/2026 có lúc bỏ hết aria-posinset / FeedUnit / role="article" (chỉ còn khung giữ chỗ):
+  // khi đó bài = tổ tiên cao nhất của nút Like mà chưa chứa nút Like của bài khác.
+  const LIKE_SEL = '[data-ad-rendering-role="like_button"], [role="button"][aria-label]';
+  const STOP_SEL = 'body, [role="main"], [role="feed"], [role="dialog"], [role="complementary"], [role="banner"]';
+  const likeAnchors = (scope) => [...scope.querySelectorAll(LIKE_SEL)].filter((e) =>
+    (e.matches('[data-ad-rendering-role]') || /^(like|thích)$/i.test((e.getAttribute('aria-label') || '').trim())) &&
+    !(e.closest('div[role="article"]') && isCommentArticle(e.closest('div[role="article"]'))));
+  function postsByLike(scope) {
+    const anchors = likeAnchors(scope);
+    const roots = new Set();
+    anchors.forEach((a) => {
+      let cur = a.closest('[role="button"]') || a;
+      while (cur.parentElement && !cur.parentElement.matches(STOP_SEL) && cur.parentElement !== scope &&
+        !anchors.some((o) => o !== a && cur.parentElement.contains(o))) cur = cur.parentElement;
+      if (cur !== a && !cur.matches(STOP_SEL)) roots.add(cur);
+    });
+    return [...roots];
+  }
+
+  const usable = (el) => el.getBoundingClientRect().height >= 150 && !!el.querySelector('a[href]'); // bỏ khung rỗng giữ chỗ
   function findPosts(scope = document) {
     const out = [];
     scope.querySelectorAll(POST_SEL).forEach((el) => {
       if (el.matches('div[role="article"]') && isCommentArticle(el)) return;
       const parent = el.parentElement?.closest(POST_SEL);
       if (parent && !(parent.matches('div[role="article"]') && isCommentArticle(parent))) return; // bài lồng trong bài
-      if (el.getBoundingClientRect().height < 150) return;
-      if (!el.querySelector('a[href]')) return; // khung rỗng giữ chỗ
+      if (usable(el)) out.push(el);
+    });
+    postsByLike(scope).forEach((el) => {
+      if (!usable(el) || out.some((p) => p === el || p.contains(el))) return;
+      for (let i = out.length - 1; i >= 0; i--) if (el.contains(out[i])) out.splice(i, 1);
       out.push(el);
     });
     return out;

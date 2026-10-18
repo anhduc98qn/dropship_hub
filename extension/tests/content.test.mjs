@@ -69,6 +69,20 @@ test('nhận diện bài + gắn nút Lưu mẫu, bỏ qua bình luận', async 
   assert.ok(posts[0].querySelector(':scope > .dsh-save'), 'có nút Lưu mẫu');
 });
 
+test('bảng tin không còn aria-posinset: bài = khối chứa nút Like, bỏ khung giữ chỗ', async () => {
+  const inner = AD_POST.replace('<div role="main"><div aria-posinset="1">', '').replace(/<\/div><\/div>$/, '');
+  const { w, t } = load(`<div role="main"><div role="feed">
+    <div class="x1"><div><div class="wrap">${inner}</div></div></div>
+    <div class="x1"><div><div class="wrap">${inner.replace('pfbid0abcDEF', 'pfbid0xyz')}</div></div></div>
+    <div><div role="article" aria-label=""></div></div>
+  </div></div>`);
+  const posts = t.findPosts(w.document);
+  assert.equal(posts.length, 2);
+  assert.ok(posts.every((p) => p.className === 'x1'), 'lấy đúng khung ngoài của từng bài');
+  assert.equal(w.document.querySelectorAll('.dsh-save').length, 2);
+  assert.equal((await t.extract(posts[0])).likes, 2700);
+});
+
 test('đọc bài quảng cáo: page, link bài, link sản phẩm, headline, content, số', async () => {
   const { w, t } = load(AD_POST);
   const d = await t.extract(t.findPosts(w.document)[0]);
