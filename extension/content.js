@@ -26,14 +26,39 @@
   const POST_SEL = 'div[aria-posinset], div[data-pagelet^="FeedUnit"], div[role="article"]';
   const isCommentArticle = (el) => /comment|bình luận|reply|phản hồi/i.test(el.getAttribute('aria-label') || '');
 
+  // Bảng tin 10/2026 có lúc bỏ hết aria-posinset / FeedUnit / role="article" (chỉ còn khung giữ chỗ):
+  // khi đó bài = tổ tiên cao nhất của nút Like mà chưa chứa nút Like của bài khác.
+  const LIKE_SEL = '[data-ad-rendering-role="like_button"], [role="button"][aria-label]';
+  const STOP_SEL = 'body, [role="main"], [role="feed"], [role="dialog"], [role="complementary"], [role="banner"]';
+  // Nút Like thật = [role="button"] aria-label="Like" bọc vùng like_button → gộp về 1 mốc mỗi nút
+  const likeAnchors = (scope) => [...new Set([...scope.querySelectorAll(LIKE_SEL)].filter((e) =>
+    (e.matches('[data-ad-rendering-role]') || /^(like|thích)$/i.test((e.getAttribute('aria-label') || '').trim())) &&
+    !(e.closest('div[role="article"]') && isCommentArticle(e.closest('div[role="article"]'))))
+    .map((e) => e.closest('[role="button"]') || e))];
+  function postsByLike(scope) {
+    const anchors = likeAnchors(scope);
+    const roots = new Set();
+    anchors.forEach((a) => {
+      let cur = a;
+      while (cur.parentElement && !cur.parentElement.matches(STOP_SEL) && cur.parentElement !== scope &&
+        !anchors.some((o) => o !== a && cur.parentElement.contains(o))) cur = cur.parentElement;
+      if (cur !== a && !cur.matches(STOP_SEL)) roots.add(cur);
+    });
+    return [...roots];
+  }
+
+  const usable = (el) => el.getBoundingClientRect().height >= 150 && !!el.querySelector('a[href]'); // bỏ khung rỗng giữ chỗ
   function findPosts(scope = document) {
     const out = [];
     scope.querySelectorAll(POST_SEL).forEach((el) => {
       if (el.matches('div[role="article"]') && isCommentArticle(el)) return;
       const parent = el.parentElement?.closest(POST_SEL);
       if (parent && !(parent.matches('div[role="article"]') && isCommentArticle(parent))) return; // bài lồng trong bài
-      if (el.getBoundingClientRect().height < 150) return;
-      if (!el.querySelector('a[href]')) return; // khung rỗng giữ chỗ
+      if (usable(el)) out.push(el);
+    });
+    postsByLike(scope).forEach((el) => {
+      if (!usable(el) || out.some((p) => p === el || p.contains(el))) return;
+      for (let i = out.length - 1; i >= 0; i--) if (el.contains(out[i])) out.splice(i, 1);
       out.push(el);
     });
     return out;
@@ -615,9 +640,23 @@
   const debugDump = async (payload) => { if (await isTestServer()) send('debugDump', payload).catch(() => {}); };
 
   // ================================================================ nút "Lưu mẫu" trên mỗi bài
+  // Đặt nút ngay bên trái cụm nút góc phải đầu bài (⋯, ×) để không che nút nào của bài
+  function placeSave(post, b) {
+    const pr = post.getBoundingClientRect();
+    if (!pr.width) return;
+    let left = Infinity;
+    post.querySelectorAll('[role="button"], [aria-haspopup]').forEach((e) => {
+      if (e === b || b.contains(e)) return;
+      const r = e.getBoundingClientRect();
+      if (r.width && r.width <= 60 && r.top < pr.top + 70 && r.bottom > pr.top && r.left > pr.left + pr.width / 2) left = Math.min(left, r.left);
+    });
+    const right = left === Infinity ? 56 : Math.max(8, Math.round(pr.right - left + 8));
+    if (b.style.right !== right + 'px') b.style.right = right + 'px';
+  }
   function inject() {
     findPosts().forEach((post) => {
-      if (post.querySelector(':scope > .dsh-save')) return;
+      const old = post.querySelector(':scope > .dsh-save');
+      if (old) return placeSave(post, old);
       if (getComputedStyle(post).position === 'static') post.style.position = 'relative';
       const b = document.createElement('button');
       b.type = 'button';
@@ -629,6 +668,7 @@
         onSave(post, b);
       });
       post.appendChild(b);
+      placeSave(post, b);
     });
   }
   let injectTimer = null;
@@ -943,5 +983,5 @@
   }
 
   // Cho bộ test tự động (extension/tests) gọi thẳng các hàm đọc bài
-  if (window.__DSH_TEST__) Object.assign(window.__DSH_TEST__, { findPosts, extract, parseCounts, buttonCounts, linkBlockStart, storyUrl, scrapePost });
+  if (window.__DSH_TEST__) Object.assign(window.__DSH_TEST__, { findPosts, placeSave, extract, parseCounts, buttonCounts, linkBlockStart, storyUrl, scrapePost });
 })();

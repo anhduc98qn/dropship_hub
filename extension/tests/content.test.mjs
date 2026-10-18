@@ -69,6 +69,37 @@ test('nhận diện bài + gắn nút Lưu mẫu, bỏ qua bình luận', async 
   assert.ok(posts[0].querySelector(':scope > .dsh-save'), 'có nút Lưu mẫu');
 });
 
+test('bảng tin không còn aria-posinset: bài = khối chứa nút Like, bỏ khung giữ chỗ', async () => {
+  // nút Like thật: role="button" aria-label="Like" bọc vùng like_button (số đo trên Facebook 18/10/2026)
+  const inner = AD_POST.replace('<div role="main"><div aria-posinset="1">', '').replace(/<\/div><\/div>$/, '')
+    .replace('<div role="button"><span data-ad-rendering-role="like_button">', '<div role="button" aria-label="Like"><div><div><span data-ad-rendering-role="like_button">')
+    .replace('2.7K</span></div>', '2.7K</span></div></div></div>');
+  const { w, t } = load(`<div role="main"><div role="feed">
+    <div class="x1"><div><div class="wrap">${inner}</div></div></div>
+    <div class="x1"><div><div class="wrap">${inner.replace('pfbid0abcDEF', 'pfbid0xyz')}</div></div></div>
+    <div><div role="article" aria-label=""></div></div>
+  </div></div>`);
+  const posts = t.findPosts(w.document);
+  assert.equal(posts.length, 2);
+  assert.ok(posts.every((p) => p.className === 'x1'), 'lấy đúng khung ngoài của từng bài');
+  assert.equal(w.document.querySelectorAll('.dsh-save').length, 2);
+  assert.equal((await t.extract(posts[0])).likes, 2700);
+});
+
+test('nút Lưu mẫu nằm bên trái nút ⋯ và × ở đầu bài, không che', () => {
+  const { w, t } = load(`<div role="main"><div aria-posinset="1"><a href="https://www.facebook.com/p">P</a>
+    <div role="button" aria-haspopup="menu" aria-label="Actions for this post" id="more">⋯</div>
+    <div role="button" aria-label="Hide post" id="hide">×</div></div></div>`);
+  const post = w.document.querySelector('[aria-posinset]');
+  const rect = (left, top, width, height) => () => ({ left, top, width, height, right: left + width, bottom: top + height, x: left, y: top });
+  post.getBoundingClientRect = rect(400, 100, 520, 600);
+  w.document.getElementById('more').getBoundingClientRect = rect(840, 112, 36, 36);
+  w.document.getElementById('hide').getBoundingClientRect = rect(880, 112, 36, 36);
+  const b = post.querySelector(':scope > .dsh-save');
+  t.placeSave(post, b);
+  assert.equal(b.style.right, '88px'); // 920 - 840 + 8
+});
+
 test('đọc bài quảng cáo: page, link bài, link sản phẩm, headline, content, số', async () => {
   const { w, t } = load(AD_POST);
   const d = await t.extract(t.findPosts(w.document)[0]);
