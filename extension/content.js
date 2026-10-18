@@ -640,9 +640,23 @@
   const debugDump = async (payload) => { if (await isTestServer()) send('debugDump', payload).catch(() => {}); };
 
   // ================================================================ nút "Lưu mẫu" trên mỗi bài
+  // Đặt nút ngay bên trái cụm nút góc phải đầu bài (⋯, ×) để không che nút nào của bài
+  function placeSave(post, b) {
+    const pr = post.getBoundingClientRect();
+    if (!pr.width) return;
+    let left = Infinity;
+    post.querySelectorAll('[role="button"], [aria-haspopup]').forEach((e) => {
+      if (e === b || b.contains(e)) return;
+      const r = e.getBoundingClientRect();
+      if (r.width && r.width <= 60 && r.top < pr.top + 70 && r.bottom > pr.top && r.left > pr.left + pr.width / 2) left = Math.min(left, r.left);
+    });
+    const right = left === Infinity ? 56 : Math.max(8, Math.round(pr.right - left + 8));
+    if (b.style.right !== right + 'px') b.style.right = right + 'px';
+  }
   function inject() {
     findPosts().forEach((post) => {
-      if (post.querySelector(':scope > .dsh-save')) return;
+      const old = post.querySelector(':scope > .dsh-save');
+      if (old) return placeSave(post, old);
       if (getComputedStyle(post).position === 'static') post.style.position = 'relative';
       const b = document.createElement('button');
       b.type = 'button';
@@ -654,6 +668,7 @@
         onSave(post, b);
       });
       post.appendChild(b);
+      placeSave(post, b);
     });
   }
   let injectTimer = null;
@@ -968,5 +983,5 @@
   }
 
   // Cho bộ test tự động (extension/tests) gọi thẳng các hàm đọc bài
-  if (window.__DSH_TEST__) Object.assign(window.__DSH_TEST__, { findPosts, extract, parseCounts, buttonCounts, linkBlockStart, storyUrl, scrapePost });
+  if (window.__DSH_TEST__) Object.assign(window.__DSH_TEST__, { findPosts, placeSave, extract, parseCounts, buttonCounts, linkBlockStart, storyUrl, scrapePost });
 })();

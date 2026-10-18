@@ -86,6 +86,20 @@ test('bảng tin không còn aria-posinset: bài = khối chứa nút Like, bỏ
   assert.equal((await t.extract(posts[0])).likes, 2700);
 });
 
+test('nút Lưu mẫu nằm bên trái nút ⋯ và × ở đầu bài, không che', () => {
+  const { w, t } = load(`<div role="main"><div aria-posinset="1"><a href="https://www.facebook.com/p">P</a>
+    <div role="button" aria-haspopup="menu" aria-label="Actions for this post" id="more">⋯</div>
+    <div role="button" aria-label="Hide post" id="hide">×</div></div></div>`);
+  const post = w.document.querySelector('[aria-posinset]');
+  const rect = (left, top, width, height) => () => ({ left, top, width, height, right: left + width, bottom: top + height, x: left, y: top });
+  post.getBoundingClientRect = rect(400, 100, 520, 600);
+  w.document.getElementById('more').getBoundingClientRect = rect(840, 112, 36, 36);
+  w.document.getElementById('hide').getBoundingClientRect = rect(880, 112, 36, 36);
+  const b = post.querySelector(':scope > .dsh-save');
+  t.placeSave(post, b);
+  assert.equal(b.style.right, '88px'); // 920 - 840 + 8
+});
+
 test('đọc bài quảng cáo: page, link bài, link sản phẩm, headline, content, số', async () => {
   const { w, t } = load(AD_POST);
   const d = await t.extract(t.findPosts(w.document)[0]);
